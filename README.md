@@ -8,5 +8,3 @@ A program that emulates the 6502 Processor which was used in early gaming consol
 http://6502.org/users/obelisk/
 @Dave Poo (YouTube)
 <hr>
-
-# WIP
