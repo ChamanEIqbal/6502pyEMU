@@ -1,0 +1,5 @@
+gui/gui_experiments
+gui/build
+gui/dist
+gui/__pycache__
+.venv

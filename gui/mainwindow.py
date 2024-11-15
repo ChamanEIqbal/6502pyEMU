@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 600)
 
         # Font setup
-        font_path = os.path.join(os.getcwd(), 'gui', 'fonts', 'iosevka-regular.ttf')
+        font_path = os.path.join(os.getcwd(), 'fonts', 'iosevka-regular.ttf')
         print(f"Font path: {font_path}")
 
         font_id = QFontDatabase.addApplicationFont(font_path)
@@ -59,11 +59,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.textEdit)
 
         # Set some example text
-        example_text = """LDA $2000
-ADC $3000
-STA $4000
-LDX $5000
-; Comment line
+        example_text = """; 6502py EMULATOR
+        ; Syntax Highlighter module, v.1: 11 Nov - 15 Nov, 2024
+        ; ch 
+        ; ---------------------------
 """
         self.textEdit.setPlainText(example_text)
 
