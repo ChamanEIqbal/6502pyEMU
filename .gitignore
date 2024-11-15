@@ -4,3 +4,4 @@ gui/dist
 gui/__pycache__
 .venv
 *.spec
+*.asm
