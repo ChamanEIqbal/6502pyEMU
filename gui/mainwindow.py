@@ -1,8 +1,8 @@
 import os
 import sys
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QFile
 from PyQt5.QtGui import QFont, QFontDatabase
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget, QMenuBar, QAction, QFileDialog, QStatusBar, QLabel
 
 from syntaxhighlighter import SyntaxHighlighter
 from linenumberwidget import LineNumberWidget
@@ -12,6 +12,8 @@ os.environ["QT_QPA_PLATFORM"] = "xcb"
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        print("Initializing MainWindow")
 
         self.setWindowTitle("6502 Syntax Highlighter")
         self.setGeometry(100, 100, 800, 600)
@@ -58,21 +60,115 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.line_number_widget)
         layout.addWidget(self.textEdit)
 
-        # Set some example text
-        example_text = """; 6502py EMULATOR
-        ; Syntax Highlighter module, v.1: 11 Nov - 15 Nov, 2024
-        ; ch 
-        ; ---------------------------
-"""
-        self.textEdit.setPlainText(example_text)
+        # Initialize current_file as None (for untitled files)
+        self.current_file = None
+        print(f"current_file initialized to: {self.current_file}")
 
         # Flag to control if update is needed
         self.is_text_changed = False
+
+        # Set up status bar
+        self.statusBar = self.statusBar()
+        self.file_name_label = QLabel("Untitled*")  # Initial label for untitled
+        self.file_name_label.setStyleSheet("QLabel {background-color: #333333; color:white;}")
+        self.statusBar.addWidget(self.file_name_label)
+
+        # Set up menu actions
+        self.setup_menu()
+
+    def setup_menu(self):
+        """Set up the menu bar with File actions (New, Open, Save)."""
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("File")
+
+        # Create the New action
+        new_action = QAction("New", self)
+        new_action.setShortcut("Ctrl+N")  # Set shortcut for New file (Ctrl+N)
+        new_action.triggered.connect(self.new_file)
+        file_menu.addAction(new_action)
+
+        # Create the Open action
+        open_action = QAction("Open", self)
+        open_action.setShortcut("Ctrl+O")  # Set shortcut for Open file (Ctrl+O)
+        open_action.triggered.connect(self.open_file)
+        file_menu.addAction(open_action)
+
+        # Create the Save action
+        save_action = QAction("Save", self)
+        save_action.setShortcut("Ctrl+S")  # Set shortcut for Save file (Ctrl+S)
+        save_action.triggered.connect(self.save_file)
+        file_menu.addAction(save_action)
+
+        # Optionally, add an exit action
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+    def new_file(self):
+        """Clear the current text and reset the file state for a new file."""
+        # Check if the current file is unsaved
+        if self.is_text_changed and self.current_file is None:
+            response = QFileDialog.question(self, "Unsaved Changes", 
+                                            "You have unsaved changes. Do you want to save them?",
+                                            QFileDialog.Yes | QFileDialog.No | QFileDialog.Cancel)
+            if response == QFileDialog.Yes:
+                self.save_file()  # Save before creating new file
+            elif response == QFileDialog.Cancel:
+                return  # Don't create a new file if the user cancels
+
+        # Clear the text editor and reset the file state
+        self.textEdit.clear()
+        self.current_file = None  # No file saved yet
+        self.is_text_changed = False
+        self.update_file_name_label()  # Update the label to show "Untitled*"
+
+    def open_file(self):
+        """Open a file using QFileDialog."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "ASM Files (*.asm);;Text Files (*.txt);;All Files (*)")
+
+        if file_name:
+            with open(file_name, "r") as file:
+                file_content = file.read()
+                self.textEdit.setPlainText(file_content)
+            self.current_file = file_name  # Store the current file name
+            self.is_text_changed = False  # Reset unsaved change flag
+            self.update_file_name_label()  # Update the label with the file name
+
+    def save_file(self):
+        """Save the current content of the QTextEdit to a file."""
+        if self.current_file:
+            # If there's already a file, save to it
+            with open(self.current_file, "w") as file:
+                file.write(self.textEdit.toPlainText())
+            self.is_text_changed = False  # Reset the unsaved change flag
+            self.update_file_name_label()  # Update the label to reflect saved file name
+        else:
+            # If no file is currently saved, use QFileDialog to select where to save
+            file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", "ASM Files (*.asm);;Text Files (*.txt);;All Files (*)")
+            if file_name:
+                with open(file_name, "w") as file:
+                    file.write(self.textEdit.toPlainText())
+                self.current_file = file_name  # Store the saved file name
+                self.is_text_changed = False  # Reset the unsaved change flag
+                self.update_file_name_label()  # Update the label with the file name
+
+    def update_file_name_label(self):
+        """Update the status bar label to show the current file name or 'Untitled'."""
+        if hasattr(self, 'current_file'):
+            if self.current_file:
+                file_name = os.path.basename(self.current_file)
+                self.file_name_label.setText(file_name)
+            else:
+                self.file_name_label.setText("Untitled" + ("*" if self.is_text_changed else ""))
+        else:
+            print("current_file not initialized yet.")
 
     def on_text_changed(self):
         """Handle text changes and trigger highlighting and line number updates."""
         self.is_text_changed = True
         self.update_timer.start()  # Start the timer to handle updates
+        self.update_file_name_label()  # Update the file name label with the "*" for unsaved changes
 
     def on_update_timeout(self):
         """Called when the timer times out, used to handle line number and rehighlighting updates."""

@@ -36,7 +36,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
     # 6502 Instructions and Operators
     instructions = ['LDA', 'LDX', 'LDY', 'STA', 'STX', 'STY', 'ADC', 'SBC', 'CMP', 'CPX', 'CPY']
-    operators = ['=', '==', '!=', '<', '>', '<=', '>=', '+', '-', '*', '/', '%']
+    operators = ['=', '==', '!=', '<', '>', '<=', '>=', '\+', '-', '\*', '/', '%']
     braces = ['{', '}', '(', ')', '[', ']']
 
     def __init__(self, parent: QTextEdit) -> None:
