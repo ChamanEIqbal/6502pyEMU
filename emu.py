@@ -75,6 +75,7 @@ class CPU:
         self.A : Byte  = Byte(0) # register A
         self.X : Byte = Byte(0) # register X
         self.Y : Byte = Byte(0) # register Y
+        self.SP : Byte = 0x100
 
         self.statusFlags = StatusFlags() # status flags
         self.cycles_consumed : s32 = 0
@@ -102,7 +103,18 @@ class CPU:
             opcode_table[opcode](self, mem)
         else:
             raise ValueError(f"Unknown opcode: {opcode}")
-
+    
+    # the stack is full descending, meaning that the stack pointer is decremented when pushing and incremented when popping
+    # so we can use the stack pointer as an index to access the stack memory
+    def pushByte(self, mem, data):
+        self.writeByte(mem, 0x0100 + self.SP, data)
+        self.SP -= 1
+        self.cycles_consumed+=1
+    
+    def popByte(self, mem):
+        self.SP += 1
+        self.cycles_consumed+=1
+        return self.fetchByte(mem, 0x0100 + self.SP)
 
     # The reset routine of 6502 takes 7 cycles, and starts from 0xFFFC (reset vector address afterwards...)
     # so if any booting memory (ROM) is connected to 6502 it must be mapped to address 0xFFFC and must have instructions
@@ -135,6 +147,14 @@ if __name__ == "__main__":
     print(hex(cpu.fetchByte(mem, 0x0001))) # expected : 0x00
     print(hex(cpu.fetchByte(mem, 0x0002))) # expected:  0x00
     print(hex(cpu.fetchByte(mem, 0x0003))) # expected:  0x00
-    
+
+    # STACK IMPLEMENTATION AT ZERO PAGE, STACK 100h, 100h-1, 100h-2 etc
+    print(hex(cpu.SP)) # expected : 0x0100 top addr
+    cpu.pushByte(mem, 0x02)
+    print(hex(cpu.SP)) # expected : 0x0099 top addr
+
+
+    print(hex(cpu.fetchByte(mem, 0x0100 + cpu.SP))) 
+    print(hex(cpu.popByte(mem))) # expected : 0x02
     
     print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}")
