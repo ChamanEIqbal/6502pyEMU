@@ -7,7 +7,14 @@ Word = NewType('Word', int)
 u32 = NewType('u32', int)
 s32 = NewType('s32', int)
 
-# this feels very bad
+# lookup table for instructions
+
+opcode_table = {
+    0xA9: lambda cpu, mem: cpu.implement_LDA_IMMEDIATE(mem),
+    0x00: lambda cpu, mem: cpu.implement_BRK(mem),
+    # ... add more opcodes and their corresponding implementations ... WIP
+}
+
 
 class Mem: # memory class
     MAX_MEM : u32 = 1024 * 64 # 64 kilobytes of memory
@@ -89,6 +96,12 @@ class CPU:
     def writeByte(self, mem: Mem, address : Word, data : Byte):
         self.cycles_consumed+=1
         mem[address] =  data
+
+    def execute_instruction(self, opcode, mem):
+        if opcode in opcode_table:
+            opcode_table[opcode](self, mem)
+        else:
+            raise ValueError(f"Unknown opcode: {opcode}")
 
 
     # The reset routine of 6502 takes 7 cycles, and starts from 0xFFFC (reset vector address afterwards...)
