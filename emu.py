@@ -61,7 +61,7 @@ class StatusFlags: # status flags, little endian (C LSB, N MSB) [8 bits, 1 byte]
 
 
 class CPU:
-    def __init__(self, mem : Mem):    
+    def __init__(self):    
         self.PC : Word = Word(0) # program counter
         self.SP : Byte  = Byte(0) # stack pointer
 
@@ -70,7 +70,6 @@ class CPU:
         self.Y : Byte = Byte(0) # register Y
 
         self.statusFlags = StatusFlags() # status flags
-        self.mem = Mem()
         self.cycles_consumed : s32 = 0
               
 
@@ -83,13 +82,13 @@ class CPU:
         self.statusFlags.from_byte(p_byte)
 
     
-    def fetchByte(self, address : Word) -> Byte:
+    def fetchByte(self, mem: Mem, address : Word) -> Byte:
         self.cycles_consumed+=1
-        return self.mem[address]
+        return mem[address]
 
-    def writeByte(self, address : Word, data : Byte):
+    def writeByte(self, mem: Mem, address : Word, data : Byte):
         self.cycles_consumed+=1
-        self.mem[address] =  data
+        mem[address] =  data
 
 
     # The reset routine of 6502 takes 7 cycles, and starts from 0xFFFC (reset vector address afterwards...)
@@ -102,8 +101,27 @@ class CPU:
 
 if __name__ == "__main__":
     mem = Mem() # can be loaded with .bin files (pre configured memories, emulated BIOS etc)
-    cpu = CPU(mem)
+    cpu = CPU()
 
-    cpu.writeByte(0xFFFC, 0xA9) # this should not be done this way, this should be done through Instruction Sets
-    print(hex(cpu.fetchByte(0xFFFC))) # expected : 0xa9, test passed
+    cpu.writeByte(mem, 0xFFFC, 0xA9) # this should not be done this way, this should be done through Instruction Sets
+    print(hex(cpu.fetchByte(mem, 0xFFFC))) # expected : 0xa9, test passed
     print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}") # expected : 2 cycles
+
+    cpu.writeByte(mem, 0xFFFD, 0x00)
+    cpu.writeByte(mem, 0xFFFE, 0x00)
+    cpu.writeByte(mem, 0xFFFF, 0x00)
+    cpu.writeByte(mem, 0x0000, 0x00)
+    cpu.writeByte(mem, 0x0001, 0x00)
+    cpu.writeByte(mem, 0x0002, 0x00)
+    cpu.writeByte(mem, 0x0003, 0x00)
+    
+    print(hex(cpu.fetchByte(mem, 0xFFFD))) # expected : 0x00
+    print(hex(cpu.fetchByte(mem, 0xFFFE))) # expected : 0x00
+    print(hex(cpu.fetchByte(mem, 0xFFFF))) # expected : 0x00
+    print(hex(cpu.fetchByte(mem, 0x0000))) # expected : 0x00
+    print(hex(cpu.fetchByte(mem, 0x0001))) # expected : 0x00
+    print(hex(cpu.fetchByte(mem, 0x0002))) # expected:  0x00
+    print(hex(cpu.fetchByte(mem, 0x0003))) # expected:  0x00
+    
+    
+    print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}")
