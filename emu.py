@@ -75,7 +75,7 @@ class CPU:
         self.A : Byte  = Byte(0) # register A
         self.X : Byte = Byte(0) # register X
         self.Y : Byte = Byte(0) # register Y
-        self.SP : Byte = 0x100
+        self.SP : Word = 0x1FFF # stack pointer points to beginning of stack
 
         self.statusFlags = StatusFlags() # status flags
         self.cycles_consumed : s32 = 0
@@ -107,21 +107,34 @@ class CPU:
     # the stack is full descending, meaning that the stack pointer is decremented when pushing and incremented when popping
     # so we can use the stack pointer as an index to access the stack memory
     def pushByte(self, mem, data):
-        self.writeByte(mem, 0x0100 + self.SP, data)
+        self.writeByte(mem, self.SP, data)
         self.SP -= 1
         self.cycles_consumed+=1
     
     def popByte(self, mem):
         self.SP += 1
         self.cycles_consumed+=1
-        return self.fetchByte(mem, 0x0100 + self.SP)
+        return self.fetchByte(mem, self.SP)
 
     # The reset routine of 6502 takes 7 cycles, and starts from 0xFFFC (reset vector address afterwards...)
     # so if any booting memory (ROM) is connected to 6502 it must be mapped to address 0xFFFC and must have instructions
     # as required.
 
 
-    ## WIP
+    ## WIP, INSTRUCTIONS
+    def implement_LDA_IMMEDIATE(self, data):
+        self.A = data
+        self.cycles_consumed+=2
+        self.statusFlags.Z = (self.A == 0)
+        self.statusFlags.N = (self.A >> 7)
+
+    def implement_BRK(self, data):
+        self.cycles_consumed+=7
+        self.pushByte(data, self.PS)
+        self.pushByte(data, self.PC >> 8)
+        self.pushByte(data, self.PC & 0xFF)
+        self.PC = self.fetchByte(data, 0xFFFE) | (self.fetchByte(data, 0xFFFF) << 8)
+        
 
 
 if __name__ == "__main__":
@@ -132,8 +145,8 @@ if __name__ == "__main__":
     print(hex(cpu.fetchByte(mem, 0xFFFC))) # expected : 0xa9, test passed
     print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}") # expected : 2 cycles
 
-    cpu.writeByte(mem, 0xFFFD, 0x00)
-    cpu.writeByte(mem, 0xFFFE, 0x00)
+    cpu.writeByte(mem, 0xFFFD, 0x00) # +1 cycle
+    cpu.writeByte(mem, 0xFFFE, 0x00) # +1 cycle
     cpu.writeByte(mem, 0xFFFF, 0x00)
     cpu.writeByte(mem, 0x0000, 0x00)
     cpu.writeByte(mem, 0x0001, 0x00)
@@ -157,4 +170,17 @@ if __name__ == "__main__":
     print(hex(cpu.fetchByte(mem, 0x0100 + cpu.SP))) 
     print(hex(cpu.popByte(mem))) # expected : 0x02
     
+    print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}")
+
+
+    # checking instructions, this is all wrong probably... 
+    # need to document all this, and correct it further.
+    cpu.PC = 0xFFFC
+    cpu.writeByte(mem, 0xFFFC, 0xA9) # this should not be done this way, this should be done through Instruction Sets
+    cpu.writeByte(mem, 0xFFFD, 0x02) # this should not be done this way, this should be done through Instruction Sets
+    cpu.execute_instruction(cpu.implement_LDA_IMMEDIATE(0xFFFD), mem)
+
+
+    print(hex(cpu.A)) # Expected: 0x02
+    print(hex(cpu.PC)) # Expected: 0x0FFFD
     print(f"no. of cycles consumed throughout: {cpu.cycles_consumed}")
