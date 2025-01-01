@@ -1,7 +1,7 @@
 import sys
 import requests
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QAction, QTableWidget,
+    QTableWidget,
     QTableWidgetItem, QVBoxLayout, QWidget, QTabWidget, QTextEdit
 )
 
@@ -81,40 +81,3 @@ class DebuggerWindow(QWidget):
         memory_dump = self.fetch_memory_dump()
         memory_text = "\n".join(f"{addr}: {value}" for addr, value in memory_dump.items())
         self.memory_view.setText(memory_text)
-
-
-class MainWindow(QMainWindow):
-    def __init__(self, api_url):
-        super().__init__()
-        self.api_url = api_url
-        self.setWindowTitle("Main Window")
-        self.setGeometry(50, 50, 800, 600)
-
-        # Menu bar
-        menubar = self.menuBar()
-        debugger_menu = menubar.addMenu("Debugger")
-
-        # Debugger action
-        open_debugger_action = QAction("Open Debugger", self)
-        open_debugger_action.triggered.connect(self.open_debugger)
-        debugger_menu.addAction(open_debugger_action)
-
-        # Debugger window instance
-        self.debugger_window = DebuggerWindow(self.api_url)
-
-    def open_debugger(self):
-        self.debugger_window.update_cpu_table()  # Update CPU table with current state
-        self.debugger_window.update_memory_view()  # Update memory view with current state
-        self.debugger_window.show()
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    # Base URL of the Flask API
-    API_URL = "http://127.0.0.1:5000"
-
-    main_window = MainWindow(API_URL)
-    main_window.show()
-
-    sys.exit(app.exec_())
