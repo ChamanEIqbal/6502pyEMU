@@ -115,7 +115,6 @@ def memory_at_address():
         return jsonify({"error": "Invalid address format. Must be a valid hexadecimal value."}), 400
 
 
-# API Endpoints
 @app.route('/assemble', methods=['POST'])
 def assemble():
     data = request.json
