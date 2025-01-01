@@ -6,11 +6,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, Q
 
 from syntaxhighlighter import SyntaxHighlighter
 from linenumberwidget import LineNumberWidget
+from debugger import DebuggerWindow
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, api_url):
         super().__init__()
 
         print("Initializing MainWindow")
@@ -74,12 +75,21 @@ class MainWindow(QMainWindow):
         self.statusBar.addWidget(self.file_name_label)
 
         # Set up menu actions
+        self.api_url = api_url  # Store the API URL for the debugger
         self.setup_menu()
 
     def setup_menu(self):
         """Set up the menu bar with File actions (New, Open, Save)."""
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("File")
+        debugger_menu = menu_bar.addMenu("Debugger")
+
+        # Debugger action
+        open_debugger_action = QAction("Open Debugger", self)
+        open_debugger_action.triggered.connect(self.open_debugger)
+        debugger_menu.addAction(open_debugger_action)
+
+        # Create the File menu
 
         # Create the New action
         new_action = QAction("New", self)
@@ -164,6 +174,12 @@ class MainWindow(QMainWindow):
         else:
             print("current_file not initialized yet.")
 
+    def open_debugger(self):
+        self.debugger_window = DebuggerWindow(self.api_url)  # Pass API URL to the debugger
+        self.debugger_window.update_cpu_table()  # Update CPU table with current state
+        self.debugger_window.update_memory_view()  # Update memory view with current state
+        self.debugger_window.show()
+
     def on_text_changed(self):
         """Handle text changes and trigger highlighting and line number updates."""
         self.is_text_changed = True
@@ -180,6 +196,11 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainWindow()
+    
+    # Base URL of the Flask API
+    API_URL = "http://127.0.0.1:5000"
+    
+    window = MainWindow(API_URL)
     window.show()
+    
     sys.exit(app.exec_())

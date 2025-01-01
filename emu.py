@@ -48,7 +48,7 @@ class StatusFlags: # status flags, little endian (C LSB, N MSB) [8 bits, 1 byte]
         self.B = 1  
         self.Unused = 1  
         self.V = 1  
-        self.N = 1  
+        self.N = 1
 
     def __repr__(self):
         return f"StatusFlags(C={self.C}, Z={self.Z}, I={self.I}, D={self.D}, B={self.B}, Unused={self.Unused}, V={self.V}, N={self.N})"
