@@ -8,9 +8,6 @@ from syntaxhighlighter import SyntaxHighlighter
 from widgets import Widgets
 from linenumberwidget import LineNumberWidget
 from debugger import DebuggerWindow
-
-os.environ["QT_QPA_PLATFORM"] = "xcb"
-
 class MainWindow(QMainWindow):
     def __init__(self, api_url):
         super().__init__()
@@ -19,6 +16,9 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("6502 Emulator v0.0.2")
         self.setGeometry(100, 100, 800, 600)
+
+        # Mode flag: 'edit' or 'debug'
+        self.mode = 'edit'
 
         # Font setup
         font_path = os.path.join(os.getcwd(), 'fonts', 'iosevka-regular.ttf')
@@ -78,12 +78,13 @@ class MainWindow(QMainWindow):
         self.api_url = api_url  # Store the API URL for the debugger
         self.setup_menu()
 
-        # Add shortcut for line splitting (Ctrl + P)
-        self.split_lines_shortcut = QShortcut(QKeySequence("Ctrl+P"), self)
-        self.split_lines_shortcut.activated.connect(self.split_text_lines)
-        
-        self.assemble_ready_shortcut = QShortcut(QKeySequence("CTRL+Shift+P"), self)
-        self.assemble_ready_shortcut.activated.connect(self.assemble_ready)
+        # Add shortcuts
+        self.add_shortcuts()
+
+        # Debugger-related attributes
+        self.debugger_active = False
+        self.current_line = 0
+        self.instructions = []
 
     def setup_menu(self):
         """Set up the menu bar with File actions (New, Open, Save)."""
@@ -92,34 +93,106 @@ class MainWindow(QMainWindow):
         debugger_menu = menu_bar.addMenu("Debugger")
 
         # Debugger action
-        open_debugger_action = QAction("Open Debugger", self)
-        open_debugger_action.triggered.connect(self.open_debugger)
-        debugger_menu.addAction(open_debugger_action)
+        toggle_debug_mode_action = QAction("Toggle Debug Mode", self)
+        toggle_debug_mode_action.triggered.connect(self.toggle_debug_mode)
+        toggle_debug_mode_action.setShortcut("Ctrl+D")
+        debugger_menu.addAction(toggle_debug_mode_action)
+
+        step_action = QAction("STEP", self)
+        step_action.triggered.connect(self.step_instruction)
+        debugger_menu.addAction(step_action)
 
         # Create the File menu
-        # Create the New action
         new_action = QAction("New", self)
-        new_action.setShortcut("Ctrl+N")  # Set shortcut for New file (Ctrl+N)
+        new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self.new_file)
         file_menu.addAction(new_action)
 
-        # Create the Open action
         open_action = QAction("Open", self)
-        open_action.setShortcut("Ctrl+O")  # Set shortcut for Open file (Ctrl+O)
+        open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
 
-        # Create the Save action
         save_action = QAction("Save", self)
-        save_action.setShortcut("Ctrl+S")  # Set shortcut for Save file (Ctrl+S)
+        save_action.setShortcut("Ctrl+S")
         save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
 
-        # Optionally, add an exit action
         exit_action = QAction("Exit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+
+    def add_shortcuts(self):
+        """Add keyboard shortcuts for actions."""
+        self.split_lines_shortcut = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.split_lines_shortcut.activated.connect(self.split_text_lines)
+
+        self.assemble_ready_shortcut = QShortcut(QKeySequence("CTRL+Shift+P"), self)
+        self.assemble_ready_shortcut.activated.connect(self.assemble_ready)
+
+        self.step_next_shortcut = QShortcut(Qt.Key_F8, self)
+        self.step_next_shortcut.activated.connect(self.step_instruction)
+
+    def toggle_debug_mode(self):
+        """Toggle between edit mode and debug mode."""
+        self.mode = 'debug' if self.mode == 'edit' else 'edit'
+        self.debugger_active = self.mode == 'debug'
+        
+        if self.debugger_active:
+            self.debugger_window = DebuggerWindow(self.api_url)
+            self.debugger_window.init_cpu_table()
+            self.debugger_window.update_memory_view()
+            self.debugger_window.show()
+
+            print("Debugger Mode Activated")
+            self.initialize_debugger()
+        else:
+            print("Edit Mode Activated")
+            self.textEdit.setReadOnly(False)
+
+    def initialize_debugger(self):
+        """Prepare the debugger state."""
+
+        self.textEdit.setReadOnly(True)
+        self.instructions = self.textEdit.toPlainText().splitlines()
+        self.current_line = 0
+        self.highlight_line(self.current_line)
+
+    def highlight_line(self, line_number):
+        """Highlight a specific line in the text editor."""
+        cursor = self.textEdit.textCursor()
+        cursor.movePosition(cursor.Start)
+        for _ in range(line_number):
+            cursor.movePosition(cursor.Down)
+        cursor.select(cursor.LineUnderCursor)
+        self.textEdit.setTextCursor(cursor)
+
+    def step_instruction(self):
+        """Execute the current line and move to the next line."""
+        if not self.debugger_active:
+            QMessageBox.warning(self, "Debugger Not Active", "Please enable Debug Mode first.")
+            return
+
+        if self.current_line >= len(self.instructions):
+            QMessageBox.information(self, "End of Program", "No more instructions to execute.")
+            return
+
+        instruction = self.instructions[self.current_line].strip()
+        if instruction.endswith(":"):  # If it's a label, skip it
+            print(f"Label encountered: {instruction}")
+        else:
+            print(f"Executing instruction: {instruction}")
+            self.execute_opcode()  # Mock execution function
+
+        self.current_line += 1
+        self.highlight_line(self.current_line)
+
+    def execute_opcode(self):
+        """Mock execution of an opcode."""
+        
+        self.debugger_window.step_next()
+
 
     def new_file(self):
         """Clear the current text and reset the file state for a new file."""

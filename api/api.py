@@ -83,6 +83,37 @@ def execute():
 def state():
     return jsonify(cpu_state)
 
+@app.route('/step_next', methods=['POST'])
+def fetch_next_instruction():
+    global cpu_state
+    try:
+        # Fetch the opcode at the current PC
+        pc = cpu_state["PC"]
+
+        if pc < 0 or pc >= MAX_MEM:
+            return jsonify({"error": "Program Counter out of range"}), 400
+
+        opcode = memory[pc]
+
+        if opcode not in opcode_table:
+            return jsonify({"error": f"Invalid opcode: {opcode:02X}"}), 400
+
+        # Execute the opcode
+        execute_opcode(opcode)
+
+        # Return the updated state
+        return jsonify({
+            "success": True,
+            "message": f"Executed opcode {opcode:02X}",
+            "cpu_state": cpu_state,
+            "memory_state": [
+                {"address": f"{addr:04X}", "value": f"{value:02X}"}
+                for addr, value in enumerate(memory) if value != 0
+            ]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/memory', methods=['GET'])
 def memory_dump():
     memory_hex = {f"{addr:04X}": f"{value:02X}" for addr, value in enumerate(memory)}
@@ -121,12 +152,25 @@ def assemble():
     source_code = data.get("source_code")
     if not isinstance(source_code, list):
         return jsonify({"error": "Invalid source code format. Must be a list of strings."}), 400
+
     try:
+        # Perform the assembly process
         symbol_table = Assembler.first_pass(source_code)
         machine_code = Assembler.second_pass(source_code, symbol_table)
+
+        # Load the machine code into memory at the current PC address
+        pc = cpu_state["PC"]
+        for offset, byte in enumerate(machine_code):
+            if pc + offset >= MAX_MEM:
+                return jsonify({"error": "Program exceeds memory limit"}), 400
+            memory[pc + offset] = byte
+
+        # Return a response including the machine code and updated memory
         return jsonify({
             "symbol_table": symbol_table,
-            "machine_code": [f"{byte:02X}" for byte in machine_code]
+            "machine_code": [f"{byte:02X}" for byte in machine_code],
+            "start_address": f"{pc:04X}",
+            "message": "Program assembled and loaded into memory."
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
