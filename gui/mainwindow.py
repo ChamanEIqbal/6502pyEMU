@@ -196,7 +196,11 @@ class MainWindow(QMainWindow):
         Widgets.split_lines(text)
     
     def assemble_ready(self): # Make an Assembler Widget, that does this and then returns to MainWindow
-        QMessageBox.information(self, "Assembling Complete", "Program loaded to memory and assembled.")
+        text = self.textEdit.toPlainText()
+        if(Widgets.assemble(text)):
+            QMessageBox.information(self, "Success", "Successfully Assembled!")
+        else:
+            QMessageBox.information(self, "Failure", "Failure, Cannot Assemble.")
 
 
 if __name__ == '__main__':

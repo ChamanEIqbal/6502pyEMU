@@ -1,35 +1,52 @@
-class Widgets: # This module will use the 2 pass assembler!
+import requests
+
+class Widgets:
+    api_url = "http://localhost:5000"  # Basic Flask API URL
+
     @staticmethod
     def split_lines(text):
         """
-        6502 Emulator - v0.0.2: LINE SPLITTER MODULE
         Splits the given text into lines and prints each line.
         
         Args:
             text (str): The input text to split into lines.
-
-        Work Flow Function (*) ==> THIS:
-            -*Gives to API, JSON request.
-            -API Manages / Assembles the request and returns a JSON response.
-            -*Gets Response from API, prints the Assembled Code to Console.
-            -Responsed API is put to Memory of CPU at backend.
-            -Backend Memory uses Program for Execution / Steps for Debugger or PPU.
         """
         lines = text.splitlines()
         print("Split lines:")
         for i, line in enumerate(lines, start=1):
             print(f"Line {i}: {line}")
 
-    
     @staticmethod
     def assemble(text):
         """
-        Returns: Boolean
+        Sends the source code to the API for assembly and handles the response.
 
         Args:
-            text (str): source code
-        
-        Work Flow Function (*) ==> THIS:
-            Assembles and gives to memory!
+            text (str): Source code to be assembled.
+
+        Returns:
+            bool: True if the assembly was successful, False otherwise.
         """
-        pass
+        try:
+            lines = text.splitlines()
+            response = requests.post(
+                f"{Widgets.api_url}/assemble",
+                json={"source_code": lines}
+            )
+
+            if response.status_code == 200:
+                # Print the assembled program's details (symbol table, opcodes, etc.)
+                response_data = response.json()
+                print("Assembly successful!")
+                print("Symbol Table:")
+                print(response_data.get("symbol_table", "No symbol table provided."))
+                print("Opcodes:")
+                print(response_data.get("machine_code", "No opcodes provided."))
+                return True
+            else:
+                print(f"Assembly failed. Status Code: {response.status_code}")
+                print(f"Error: {response.text}")
+                return False
+        except requests.RequestException as e:
+            print(f"An error occurred while connecting to the API: {e}")
+            return False
