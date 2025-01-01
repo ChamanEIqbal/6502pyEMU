@@ -1,7 +1,9 @@
 gui/gui_experiments
 gui/build
 gui/dist
-gui/__pycache__
+gui/__pycache__/
+api/__pycache__/
+__pycache__/
 .venv
 *.spec
 *.asm
