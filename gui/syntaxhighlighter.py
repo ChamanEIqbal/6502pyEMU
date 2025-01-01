@@ -35,7 +35,13 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     """Syntax highlighter for a simple custom 6502 assembly language."""
 
     # 6502 Instructions and Operators
-    instructions = ['LDA', 'LDX', 'LDY', 'STA', 'STX', 'STY', 'ADC', 'SBC', 'CMP', 'CPX', 'CPY']
+    instructions =  [
+                    'AND', 'ASL', 'BCC', 'BCS', 'BEQ', 'BIT', 'BMI', 'BNE', 'BPL', 'BRK', 'BVC',
+                    'BVS', 'CLC', 'CLD', 'CLI', 'CLV', 'CMP', 'CPX', 'CPY', 'DEC', 'DEX', 'DEY',
+                    'EOR', 'INC', 'INX', 'INY', 'JMP', 'JSR', 'LDA', 'LDX', 'LDY', 'LSR', 'NOP',
+                    'ORA', 'PHA', 'PHP', 'PLP', 'ROL', 'ROR', 'RTI', 'RTS', 'SBC', 'SEC', 'SED',
+                    'SEI', 'STA', 'STX', 'STY', 'TAX', 'TAY', 'TSX', 'TXA', 'TXS', 'TYA'
+                    ]
     operators = ['=', '==', '!=', '<', '>', '<=', '>=', '\+', '-', '\*', '/', '%']
     braces = ['{', '}', '(', ')', '[', ']']
 

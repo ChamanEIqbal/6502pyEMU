@@ -1,12 +1,13 @@
 import os
 import sys
-from PyQt5.QtCore import Qt, QTimer, QFile
-from PyQt5.QtGui import QFont, QFontDatabase
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget, QMenuBar, QAction, QFileDialog, QStatusBar, QLabel
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont, QFontDatabase, QKeySequence
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget, QMenuBar, QAction, QFileDialog, QStatusBar, QLabel, QShortcut
 
 from syntaxhighlighter import SyntaxHighlighter
 from linenumberwidget import LineNumberWidget
 from debugger import DebuggerWindow
+from linesplitter import LineSplitter
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
@@ -24,12 +25,11 @@ class MainWindow(QMainWindow):
         print(f"Font path: {font_path}")
 
         font_id = QFontDatabase.addApplicationFont(font_path)
-
         if font_id == -1:
-            print(f"failed to find font! at path: {font_path}")
+            print(f"Failed to find font! at path: {font_path}")
         else:
             font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-            print(f"loaded font: {font_family}")
+            print(f"Loaded font: {font_family}")
 
         font = QFont(font_family)
         font.setPointSize(16)
@@ -78,6 +78,10 @@ class MainWindow(QMainWindow):
         self.api_url = api_url  # Store the API URL for the debugger
         self.setup_menu()
 
+        # Add shortcut for line splitting (Ctrl + P)
+        self.split_lines_shortcut = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.split_lines_shortcut.activated.connect(self.split_text_lines)
+
     def setup_menu(self):
         """Set up the menu bar with File actions (New, Open, Save)."""
         menu_bar = self.menuBar()
@@ -90,7 +94,6 @@ class MainWindow(QMainWindow):
         debugger_menu.addAction(open_debugger_action)
 
         # Create the File menu
-
         # Create the New action
         new_action = QAction("New", self)
         new_action.setShortcut("Ctrl+N")  # Set shortcut for New file (Ctrl+N)
@@ -117,90 +120,81 @@ class MainWindow(QMainWindow):
 
     def new_file(self):
         """Clear the current text and reset the file state for a new file."""
-        # Check if the current file is unsaved
         if self.is_text_changed and self.current_file is None:
             response = QFileDialog.question(self, "Unsaved Changes", 
                                             "You have unsaved changes. Do you want to save them?",
                                             QFileDialog.Yes | QFileDialog.No | QFileDialog.Cancel)
             if response == QFileDialog.Yes:
-                self.save_file()  # Save before creating new file
+                self.save_file()
             elif response == QFileDialog.Cancel:
-                return  # Don't create a new file if the user cancels
+                return
 
-        # Clear the text editor and reset the file state
         self.textEdit.clear()
-        self.current_file = None  # No file saved yet
+        self.current_file = None
         self.is_text_changed = False
-        self.update_file_name_label()  # Update the label to show "Untitled*"
+        self.update_file_name_label()
 
     def open_file(self):
         """Open a file using QFileDialog."""
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "ASM Files (*.asm);;Text Files (*.txt);;All Files (*)")
-
         if file_name:
             with open(file_name, "r") as file:
                 file_content = file.read()
                 self.textEdit.setPlainText(file_content)
-            self.current_file = file_name  # Store the current file name
-            self.is_text_changed = False  # Reset unsaved change flag
-            self.update_file_name_label()  # Update the label with the file name
+            self.current_file = file_name
+            self.is_text_changed = False
+            self.update_file_name_label()
 
     def save_file(self):
         """Save the current content of the QTextEdit to a file."""
         if self.current_file:
-            # If there's already a file, save to it
             with open(self.current_file, "w") as file:
                 file.write(self.textEdit.toPlainText())
-            self.is_text_changed = False  # Reset the unsaved change flag
-            self.update_file_name_label()  # Update the label to reflect saved file name
+            self.is_text_changed = False
+            self.update_file_name_label()
         else:
-            # If no file is currently saved, use QFileDialog to select where to save
             file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", "ASM Files (*.asm);;Text Files (*.txt);;All Files (*)")
             if file_name:
                 with open(file_name, "w") as file:
                     file.write(self.textEdit.toPlainText())
-                self.current_file = file_name  # Store the saved file name
-                self.is_text_changed = False  # Reset the unsaved change flag
-                self.update_file_name_label()  # Update the label with the file name
+                self.current_file = file_name
+                self.is_text_changed = False
+                self.update_file_name_label()
 
     def update_file_name_label(self):
         """Update the status bar label to show the current file name or 'Untitled'."""
-        if hasattr(self, 'current_file'):
-            if self.current_file:
-                file_name = os.path.basename(self.current_file)
-                self.file_name_label.setText(file_name)
-            else:
-                self.file_name_label.setText("Untitled" + ("*" if self.is_text_changed else ""))
+        if self.current_file:
+            file_name = os.path.basename(self.current_file)
+            self.file_name_label.setText(file_name)
         else:
-            print("current_file not initialized yet.")
+            self.file_name_label.setText("Untitled" + ("*" if self.is_text_changed else ""))
 
     def open_debugger(self):
-        self.debugger_window = DebuggerWindow(self.api_url)  # Pass API URL to the debugger
-        self.debugger_window.update_cpu_table()  # Update CPU table with current state
-        self.debugger_window.update_memory_view()  # Update memory view with current state
+        self.debugger_window = DebuggerWindow(self.api_url)
+        self.debugger_window.update_cpu_table()
+        self.debugger_window.update_memory_view()
         self.debugger_window.show()
 
     def on_text_changed(self):
-        """Handle text changes and trigger highlighting and line number updates."""
         self.is_text_changed = True
-        self.update_timer.start()  # Start the timer to handle updates
-        self.update_file_name_label()  # Update the file name label with the "*" for unsaved changes
+        self.update_timer.start()
+        self.update_file_name_label()
 
     def on_update_timeout(self):
-        """Called when the timer times out, used to handle line number and rehighlighting updates."""
         if self.is_text_changed:
-            self.highlighter.rehighlight()  # Rehighlight the text
-            self.line_number_widget.update()  # Update the line numbers
+            self.highlighter.rehighlight()
+            self.line_number_widget.update()
             self.is_text_changed = False
-        self.update_timer.stop()  # Stop the timer to avoid repeated calls
+        self.update_timer.stop()
+
+    def split_text_lines(self):
+        """Splits the text in the QTextEdit and prints it to the console."""
+        text = self.textEdit.toPlainText()
+        LineSplitter.split_lines(text)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    
-    # Base URL of the Flask API
     API_URL = "http://127.0.0.1:5000"
-    
     window = MainWindow(API_URL)
     window.show()
-    
     sys.exit(app.exec_())
