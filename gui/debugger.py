@@ -130,3 +130,4 @@ class DebuggerWindow(QWidget):
         for i, (name, value) in enumerate(attributes):
             self.cpu_table.setItem(i, 0, QTableWidgetItem(name))
             self.cpu_table.setItem(i, 1, QTableWidgetItem(str(value)))
+    

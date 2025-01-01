@@ -20,7 +20,7 @@ class Assembler:
     @staticmethod
     def first_pass(source):
         symbol_table = {}
-        address = 0x0600
+        address = 0x0000
         for line in source:
             line = line.split(";")[0].strip()
             if not line:

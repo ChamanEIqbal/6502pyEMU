@@ -22,7 +22,9 @@ cpu_state = {
 # Opcodes for simple operations
 opcode_table = {
     0xA9: "LDA_IMMEDIATE",
-    0x00: "BRK"
+    0x00: "BRK",
+    0x4C: "JMP",
+    0x8D: "STA_ABSOLUTE"
 }
 
 
@@ -41,6 +43,14 @@ def execute_opcode(opcode):
     elif opcode == 0x00:  # BRK
         cpu_state["PC"] = 0xFFFF
         cpu_state["cycles"] += 7
+    elif opcode == 0x4C:  # JMP
+        cpu_state["PC"] = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        cpu_state["cycles"] += 3
+    elif opcode == 0x8D:  # STA Absolute
+        address = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        memory[address] = cpu_state["A"]
+        cpu_state["PC"] += 3
+        cpu_state["cycles"] += 4
     else:
         raise ValueError(f"Unknown opcode: {opcode}")
 
@@ -50,6 +60,14 @@ def update_status_flags():
 # API Endpoints
 @app.route('/reset', methods=['POST'])
 def reset():
+    cpu_state["PC"] = 0x0000
+    cpu_state["A"] = 0x00
+    cpu_state["X"] = 0x00
+    cpu_state["Y"] = 0x00
+    cpu_state["SP"] = 0x1FFF
+    cpu_state["PS"] = 0x00
+    cpu_state["cycles"] = 0
+
     reset_memory()
     return jsonify({"message": "Memory reset successfully", "cpu_state": cpu_state})
 

@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
 
         print("Initializing MainWindow")
 
-        self.setWindowTitle("6502 Emulator v0.0.2")
+        self.setWindowTitle("6502 Emulator v0.0.3")
         self.setGeometry(100, 100, 800, 600)
 
         # Mode flag: 'edit' or 'debug'
@@ -149,6 +149,12 @@ class MainWindow(QMainWindow):
         self.step_next_shortcut = QShortcut(Qt.Key_F8, self)
         self.step_next_shortcut.activated.connect(self.step_instruction)
 
+        self.reset_mem_shortcut = QShortcut(QKeySequence("CTRL+R"), self)
+        self.reset_mem_shortcut.activated.connect(self.reset_memory)
+    
+    def reset_memory(self):
+        Widgets.reset_memory()
+
     def toggle_debug_mode(self):
         """Toggle between edit mode and debug mode."""
         self.mode = 'debug' if self.mode == 'edit' else 'edit'
@@ -206,6 +212,7 @@ class MainWindow(QMainWindow):
         if opcode in ('JMP', 'JSR') and len(parts) > 1:
             label = parts[1]
             if label in self.labels:
+                self.execute_opcode()
                 self.current_line = self.labels[label]  # Jump to the label line
                 print(f"Jumping to label: {label} at line {self.current_line}")
                 self.highlight_line(self.current_line)

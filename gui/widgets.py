@@ -50,3 +50,10 @@ class Widgets:
         except requests.RequestException as e:
             print(f"An error occurred while connecting to the API: {e}")
             return False
+
+    def reset_memory():
+        response = requests.post(f"{Widgets.api_url}/reset")
+        if response.status_code == 200:
+            print("Memory reset successfully.")
+        else:
+            print("Failed to reset memory.")
