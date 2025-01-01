@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
 
         print("Initializing MainWindow")
 
-        self.setWindowTitle("6502 Syntax Highlighter")
+        self.setWindowTitle("6502 Emulator v0.0.2")
         self.setGeometry(100, 100, 800, 600)
 
         # Font setup
