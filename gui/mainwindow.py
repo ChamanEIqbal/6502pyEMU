@@ -85,6 +85,21 @@ class MainWindow(QMainWindow):
         self.debugger_active = False
         self.current_line = 0
         self.instructions = []
+        self.labels = {}
+
+
+    def read_labels(self):
+            self.labels.clear()  # Clear the labels dictionary before populating it
+            text = self.textEdit.toPlainText()  # Get the text from the textEdit
+            lines = text.splitlines()  # Split the text into lines
+
+            for i, line in enumerate(lines):
+                line = line.strip()
+                if line.endswith(":"):  # Check if the line is a label
+                    label = line[:-1]  # Remove the trailing colon
+                    self.labels[label] = i  # Store the line number (0-based index)
+            
+            print(f"Labels updated: {self.labels}")
 
     def setup_menu(self):
         """Set up the menu bar with File actions (New, Open, Save)."""
@@ -142,7 +157,7 @@ class MainWindow(QMainWindow):
         if self.debugger_active:
             self.debugger_window = DebuggerWindow(self.api_url)
             self.debugger_window.init_cpu_table()
-            self.debugger_window.update_memory_view()
+            self.debugger_window.update_memory_table()
             self.debugger_window.show()
 
             print("Debugger Mode Activated")
@@ -181,6 +196,22 @@ class MainWindow(QMainWindow):
         instruction = self.instructions[self.current_line].strip()
         if instruction.endswith(":"):  # If it's a label, skip it
             print(f"Label encountered: {instruction}")
+            self.current_line += 1
+            self.highlight_line(self.current_line)
+            return
+
+        # Check if it's a JMP or JSR instruction
+        parts = instruction.split()
+        opcode = parts[0]
+        if opcode in ('JMP', 'JSR') and len(parts) > 1:
+            label = parts[1]
+            if label in self.labels:
+                self.current_line = self.labels[label]  # Jump to the label line
+                print(f"Jumping to label: {label} at line {self.current_line}")
+                self.highlight_line(self.current_line)
+                return
+            else:
+                QMessageBox.warning(self, "Invalid Label", f"Label '{label}' not found.")
         else:
             print(f"Executing instruction: {instruction}")
             self.execute_opcode()  # Mock execution function
@@ -268,7 +299,8 @@ class MainWindow(QMainWindow):
         text = self.textEdit.toPlainText()
         Widgets.split_lines(text)
     
-    def assemble_ready(self): # Make an Assembler Widget, that does this and then returns to MainWindow
+    def assemble_ready(self): 
+        self.read_labels()
         text = self.textEdit.toPlainText()
         if(Widgets.assemble(text)):
             QMessageBox.information(self, "Success", "Successfully Assembled!")
