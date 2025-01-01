@@ -27,7 +27,8 @@ STYLES = {
     'string': format('magenta'),
     'comment': format('darkGreen', 'italic'),
     'numbers': format('brown'),
-    'immediate_address': format('darkOrange')
+    'immediate_address': format('darkOrange'),
+    'label': format('darkCyan')
 }
 
 
@@ -58,10 +59,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         # Additional rules
         rules += [
             (r'\b#\w+\b', 0, STYLES['immediate_address']),
-            (r'\b[+-]?[0-9]+[lL]?\b', 0, STYLES['numbers']),
+            (r'\b[+-]?[0-9A-Fa-f]+[lL]?\b', 0, STYLES['numbers']),
             (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, STYLES['numbers']),
             (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, STYLES['numbers']),
             (r';[^\n]*', 0, STYLES['comment']),
+            (r'(\w+:)(\s*\n|$)', 1, STYLES['label']),
         ]
 
         # Build a QRegExp for each pattern

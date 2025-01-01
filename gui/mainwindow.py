@@ -2,12 +2,12 @@ import os
 import sys
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QFontDatabase, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget, QMenuBar, QAction, QFileDialog, QStatusBar, QLabel, QShortcut
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QHBoxLayout, QWidget, QMenuBar, QAction, QFileDialog, QStatusBar, QLabel, QShortcut, QMessageBox
 
 from syntaxhighlighter import SyntaxHighlighter
+from widgets import Widgets
 from linenumberwidget import LineNumberWidget
 from debugger import DebuggerWindow
-from linesplitter import LineSplitter
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
@@ -81,6 +81,9 @@ class MainWindow(QMainWindow):
         # Add shortcut for line splitting (Ctrl + P)
         self.split_lines_shortcut = QShortcut(QKeySequence("Ctrl+P"), self)
         self.split_lines_shortcut.activated.connect(self.split_text_lines)
+        
+        self.assemble_ready_shortcut = QShortcut(QKeySequence("CTRL+Shift+P"), self)
+        self.assemble_ready_shortcut.activated.connect(self.assemble_ready)
 
     def setup_menu(self):
         """Set up the menu bar with File actions (New, Open, Save)."""
@@ -190,7 +193,11 @@ class MainWindow(QMainWindow):
     def split_text_lines(self):
         """Splits the text in the QTextEdit and prints it to the console."""
         text = self.textEdit.toPlainText()
-        LineSplitter.split_lines(text)
+        Widgets.split_lines(text)
+    
+    def assemble_ready(self): # Make an Assembler Widget, that does this and then returns to MainWindow
+        QMessageBox.information(self, "Assembling Complete", "Program loaded to memory and assembled.")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
