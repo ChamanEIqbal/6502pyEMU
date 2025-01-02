@@ -4,7 +4,11 @@ OPCODES = {
     'JMP': {'absolute': 0x4C},
     'TAY': {'implied': 0xA8},  
     'TAX': {'implied': 0xAA},  
-    'INC': {'zeropage': 0xE6, 'absolute': 0xEE}  
+    'INC': {'zeropage': 0xE6, 'absolute': 0xEE},
+    'INX': {'implied': 0xE8},
+    'INY': {'implied': 0xC8},
+    'LDX': {'immediate': 0xA2, 'zeropage': 0xA6, 'absolute': 0xAE},
+    'LDY': {'immediate': 0xA0, 'zeropage': 0xA4, 'absolute': 0xAC},
 }
 
 
@@ -12,7 +16,7 @@ class Assembler:
     @staticmethod
     def get_addressing_mode(mnemonic, operand=None):
         # Handle implied addressing for TAY and TAX
-        if mnemonic in ['TAY', 'TAX']:
+        if mnemonic in ['TAY', 'TAX', 'INX', 'INY']:
             return 'implied'
         elif operand and operand.startswith("#"):
             return 'immediate'

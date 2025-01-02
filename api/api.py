@@ -31,7 +31,15 @@ opcode_table = {
     0xA8: "TAY",
     0xAA: "TAX",
     0xE6: "INC_ZEROPAGE",
-    0xEE: "INC_ABSOLUTE"
+    0xEE: "INC_ABSOLUTE",
+    0xE8: "INX",
+    0xC8: "INY",
+    0xA2: "LDX_IMMEDIATE",
+    0xA6: "LDX_ZEROPAGE",
+    0xAE: "LDX_ABSOLUTE",
+    0xA0: "LDY_IMMEDIATE",
+    0xA4: "LDY_ZEROPAGE",
+    0xAC: "LDY_ABSOLUTE"
 }
 
 
@@ -93,6 +101,42 @@ def execute_opcode(opcode):
         memory[address] = (memory[address] + 1) & 0xFF
         cpu_state["PC"] += 3
         cpu_state["cycles"] += 6
+    elif opcode == 0xE8:  # INX
+        cpu_state["X"] = (cpu_state["X"] + 1) & 0xFF
+        cpu_state["PC"] += 1
+        cpu_state["cycles"] += 2
+    elif opcode == 0xC8:  # INY
+        cpu_state["Y"] = (cpu_state["Y"] + 1) & 0xFF
+        cpu_state["PC"] += 1
+        cpu_state["cycles"] += 2
+    elif opcode == 0xA2:  # LDX Immediate
+        cpu_state["X"] = memory[cpu_state["PC"] + 1]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 2
+    elif opcode == 0xA6:  # LDX Zeropage
+        address = memory[cpu_state["PC"] + 1]
+        cpu_state["X"] = memory[address]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 3
+    elif opcode == 0xAE:  # LDX Absolute
+        address = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        cpu_state["X"] = memory[address]
+        cpu_state["PC"] += 3
+        cpu_state["cycles"] += 4
+    elif opcode == 0xA0:  # LDY Immediate
+        cpu_state["Y"] = memory[cpu_state["PC"] + 1]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 2
+    elif opcode == 0xA4:  # LDY Zeropage
+        address = memory[cpu_state["PC"] + 1]
+        cpu_state["Y"] = memory[address]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 3
+    elif opcode == 0xAC:  # LDY Absolute
+        address = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        cpu_state["Y"] = memory[address]
+        cpu_state["PC"] += 3
+        cpu_state["cycles"] += 4
     else:
         raise ValueError(f"Unknown opcode: {opcode}")
 
