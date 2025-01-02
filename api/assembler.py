@@ -74,15 +74,15 @@ class Assembler:
                 machine_code.append(opcode)
                 
                 if mode == 'immediate':
-                    value = int(operand[2:], 16)  # Convert hexadecimal operand to value
+                    value = int(operand[2:], 16)  
                     machine_code.append(value)
                 elif mode in ['zeropage', 'absolute']:
                     if operand.startswith("$"):
-                        address_value = int(operand[1:], 16)  # Convert hex address to value
+                        address_value = int(operand[1:], 16) 
                     else:
-                        address_value = symbol_table.get(operand, 0)  # Look up symbol in symbol table
-                    machine_code.append(address_value & 0xFF)  # Lower byte
+                        address_value = symbol_table.get(operand, 0)
+                    machine_code.append(address_value & 0xFF)  
                     if mode == 'absolute':
-                        machine_code.append((address_value >> 8) & 0xFF)  # Higher byte (for absolute addresses)
+                        machine_code.append((address_value >> 8) & 0xFF) 
         print(machine_code)
         return machine_code

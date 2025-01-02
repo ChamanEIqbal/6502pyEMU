@@ -9,7 +9,8 @@ app = Flask(__name__)
 
 # Memory and CPU state
 memory = [0] * MAX_MEM  # Memory array
-cpu_state = {
+cpu_state = {# Memory and CPU state
+
     "PC": 0x0000,  # Program Counter
     "A": 0x00,     # Accumulator
     "X": 0x00,     # X Register
