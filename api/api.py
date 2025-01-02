@@ -22,9 +22,16 @@ cpu_state = {
 # Opcodes for simple operations
 opcode_table = {
     0xA9: "LDA_IMMEDIATE",
+    0xA5: "LDA_ZEROPAGE",
+    0xAD: "LDA_ABSOLUTE",
     0x00: "BRK",
     0x4C: "JMP",
-    0x8D: "STA_ABSOLUTE"
+    0x85: "STA_ZEROPAGE",
+    0x8D: "STA_ABSOLUTE",
+    0xA8: "TAY",
+    0xAA: "TAX",
+    0xE6: "INC_ZEROPAGE",
+    0xEE: "INC_ABSOLUTE"
 }
 
 
@@ -40,6 +47,18 @@ def execute_opcode(opcode):
         cpu_state["PC"] += 2
         cpu_state["cycles"] += 2
         update_status_flags()
+    elif opcode == 0xA5:  # LDA Zeropage
+        address = memory[cpu_state["PC"] + 1]
+        cpu_state["A"] = memory[address]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 3
+        update_status_flags()
+    elif opcode == 0xAD:  # LDA Absolute
+        address = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        cpu_state["A"] = memory[address]
+        cpu_state["PC"] += 3
+        cpu_state["cycles"] += 4
+        update_status_flags()
     elif opcode == 0x00:  # BRK
         cpu_state["PC"] = 0xFFFF
         cpu_state["cycles"] += 7
@@ -51,6 +70,29 @@ def execute_opcode(opcode):
         memory[address] = cpu_state["A"]
         cpu_state["PC"] += 3
         cpu_state["cycles"] += 4
+    elif opcode == 0x85:  # STA Zeropage
+        address = memory[cpu_state["PC"] + 1]
+        memory[address] = cpu_state["A"]
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 3
+    elif opcode == 0xA8:  # TAY
+        cpu_state["Y"] = cpu_state["A"]
+        cpu_state["PC"] += 1
+        cpu_state["cycles"] += 2
+    elif opcode == 0xAA:  # TAX
+        cpu_state["X"] = cpu_state["A"]
+        cpu_state["PC"] += 1
+        cpu_state["cycles"] += 2
+    elif opcode == 0xE6:  # INC Zeropage
+        address = memory[cpu_state["PC"] + 1]
+        memory[address] = (memory[address] + 1) & 0xFF
+        cpu_state["PC"] += 2
+        cpu_state["cycles"] += 5
+    elif opcode == 0xEE:  # INC Absolute
+        address = memory[cpu_state["PC"] + 1] | (memory[cpu_state["PC"] + 2] << 8)
+        memory[address] = (memory[address] + 1) & 0xFF
+        cpu_state["PC"] += 3
+        cpu_state["cycles"] += 6
     else:
         raise ValueError(f"Unknown opcode: {opcode}")
 
